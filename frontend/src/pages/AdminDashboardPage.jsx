@@ -315,8 +315,9 @@ const AdminDashboardPage = () => {
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', gap: '1.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
                       <span>Requester: {t.requester?.name} ({t.requester?.email})</span>
                       <span>Tasker: {t.tasker?.name} ({t.tasker?.email})</span>
-                      <span>Reward: ₹{t.rewardAmount}</span>
+                      <span>Category: {t.category?.replace('_', ' ')}</span>
                     </div>
+
                     <div
                       style={{
                         borderTop: '1px solid var(--border-color)',

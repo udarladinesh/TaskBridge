@@ -25,9 +25,10 @@ const seedRunner = async () => {
       role: 'admin',
       bio: 'Platform safety and dispute resolution administrator.',
       profileImage: 'https://ui-avatars.com/api/?background=ef4444&color=fff&size=128&name=Admin',
-      walletBalance: 15000,
+      walletBalance: 0,
       escrowBalance: 0
     });
+
 
     // Create 10 Normal Users
     const usersData = [

@@ -6,7 +6,15 @@ const Task = require('../models/Task');
 // @access  Private
 exports.createRating = async (req, res) => {
   try {
+    if (req.user.role === 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admins cannot submit task ratings'
+      });
+    }
+
     const { taskId, rating, comment } = req.body;
+
 
     if (!taskId || !rating) {
       return res.status(400).json({

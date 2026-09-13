@@ -89,7 +89,7 @@ const Navbar = () => {
             <Search size={18} /> Browse Tasks
           </Link>
 
-          {user && (
+          {user && user.role !== 'admin' && (
             <>
               {activeMode === 'requester' && (
                 <Link
@@ -120,27 +120,27 @@ const Navbar = () => {
               >
                 <LayoutDashboard size={18} /> Dashboard
               </Link>
-
-              {user.role === 'admin' && (
-                <Link
-                  to="/admin"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.4rem',
-                    color: 'var(--rose)',
-                    fontWeight: 700,
-                    fontSize: '0.85rem',
-                    background: 'rgba(244, 63, 94, 0.1)',
-                    padding: '0.35rem 0.75rem',
-                    borderRadius: '6px',
-                    border: '1px solid rgba(244, 63, 94, 0.25)'
-                  }}
-                >
-                  <ShieldAlert size={16} /> Admin Portal
-                </Link>
-              )}
             </>
+          )}
+
+          {user && user.role === 'admin' && (
+            <Link
+              to="/admin"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                color: 'var(--rose)',
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                background: 'rgba(244, 63, 94, 0.1)',
+                padding: '0.35rem 0.75rem',
+                borderRadius: '6px',
+                border: '1px solid rgba(244, 63, 94, 0.25)'
+              }}
+            >
+              <ShieldAlert size={16} /> Admin Portal
+            </Link>
           )}
         </nav>
 
@@ -148,51 +148,55 @@ const Navbar = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }} className="desktop-nav">
           {user ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              {/* Mode Toggle Button */}
-              <button
-                onClick={toggleActiveMode}
-                title="Switch between Requester and Tasker mode"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.4rem',
-                  padding: '0.35rem 0.75rem',
-                  borderRadius: '20px',
-                  fontSize: '0.8rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  border: activeMode === 'requester' ? '1px solid rgba(99, 102, 241, 0.5)' : '1px solid rgba(16, 185, 129, 0.5)',
-                  background: activeMode === 'requester' ? 'rgba(99, 102, 241, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-                  color: activeMode === 'requester' ? 'var(--primary-light)' : 'var(--emerald)',
-                  transition: 'all 0.15s ease'
-                }}
-              >
-                <Repeat size={14} />
-                <span>{activeMode === 'requester' ? 'Requester' : 'Tasker'}</span>
-              </button>
+              {/* Mode Toggle Button (Non-Admin Users Only) */}
+              {user.role !== 'admin' && (
+                <button
+                  onClick={toggleActiveMode}
+                  title="Switch between Requester and Tasker mode"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    padding: '0.35rem 0.75rem',
+                    borderRadius: '20px',
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    border: activeMode === 'requester' ? '1px solid rgba(99, 102, 241, 0.5)' : '1px solid rgba(16, 185, 129, 0.5)',
+                    background: activeMode === 'requester' ? 'rgba(99, 102, 241, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                    color: activeMode === 'requester' ? 'var(--primary-light)' : 'var(--emerald)',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <Repeat size={14} />
+                  <span>{activeMode === 'requester' ? 'Requester' : 'Tasker'}</span>
+                </button>
+              )}
 
-              {/* Wallet Balance Pill */}
-              <Link
-                to="/wallet"
-                title="View Wallet & Escrow Ledger"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.45rem',
-                  textDecoration: 'none',
-                  background: isActive('/wallet') ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.05)',
-                  padding: '0.35rem 0.75rem',
-                  borderRadius: '10px',
-                  border: isActive('/wallet') ? '1px solid var(--emerald)' : '1px solid var(--border-color)',
-                  color: '#fff',
-                  fontSize: '0.85rem',
-                  fontWeight: 700,
-                  transition: 'all 0.15s ease'
-                }}
-              >
-                <Wallet size={16} color="var(--emerald)" />
-                <span>₹{(user.walletBalance ?? 5000).toLocaleString('en-IN')}</span>
-              </Link>
+              {/* Wallet Balance Pill (Non-Admin Users Only) */}
+              {user.role !== 'admin' && (
+                <Link
+                  to="/wallet"
+                  title="View Wallet & Escrow Ledger"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.45rem',
+                    textDecoration: 'none',
+                    background: isActive('/wallet') ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                    padding: '0.35rem 0.75rem',
+                    borderRadius: '10px',
+                    border: isActive('/wallet') ? '1px solid var(--emerald)' : '1px solid var(--border-color)',
+                    color: '#fff',
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <Wallet size={16} color="var(--emerald)" />
+                  <span>₹{(user.walletBalance ?? 5000).toLocaleString('en-IN')}</span>
+                </Link>
+              )}
 
               {/* Live Notifications Bell Dropdown */}
               <NotificationDropdown />
@@ -284,26 +288,30 @@ const Navbar = () => {
 
           {user && (
             <>
-              {activeMode === 'requester' && (
-                <Link
-                  to="/create-task"
-                  style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.65rem 0', color: isActive('/create-task') ? 'var(--cyan)' : 'var(--text-sub)', fontWeight: 600, borderBottom: '1px solid var(--border-color)' }}
-                >
-                  <PlusCircle size={18} /> Post a Task
-                </Link>
+              {user.role !== 'admin' && (
+                <>
+                  {activeMode === 'requester' && (
+                    <Link
+                      to="/create-task"
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.65rem 0', color: isActive('/create-task') ? 'var(--cyan)' : 'var(--text-sub)', fontWeight: 600, borderBottom: '1px solid var(--border-color)' }}
+                    >
+                      <PlusCircle size={18} /> Post a Task
+                    </Link>
+                  )}
+                  <Link
+                    to="/dashboard"
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.65rem 0', color: isActive('/dashboard') ? 'var(--cyan)' : 'var(--text-sub)', fontWeight: 600, borderBottom: '1px solid var(--border-color)' }}
+                  >
+                    <LayoutDashboard size={18} /> Dashboard
+                  </Link>
+                  <Link
+                    to="/wallet"
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.65rem 0', color: isActive('/wallet') ? 'var(--cyan)' : 'var(--text-sub)', fontWeight: 600, borderBottom: '1px solid var(--border-color)' }}
+                  >
+                    <Wallet size={18} /> Wallet (₹{(user.walletBalance ?? 5000).toLocaleString('en-IN')})
+                  </Link>
+                </>
               )}
-              <Link
-                to="/dashboard"
-                style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.65rem 0', color: isActive('/dashboard') ? 'var(--cyan)' : 'var(--text-sub)', fontWeight: 600, borderBottom: '1px solid var(--border-color)' }}
-              >
-                <LayoutDashboard size={18} /> Dashboard
-              </Link>
-              <Link
-                to="/wallet"
-                style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.65rem 0', color: isActive('/wallet') ? 'var(--cyan)' : 'var(--text-sub)', fontWeight: 600, borderBottom: '1px solid var(--border-color)' }}
-              >
-                <Wallet size={18} /> Wallet (₹{(user.walletBalance ?? 5000).toLocaleString('en-IN')})
-              </Link>
               <Link
                 to="/profile"
                 style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.65rem 0', color: isActive('/profile') ? 'var(--cyan)' : 'var(--text-sub)', fontWeight: 600, borderBottom: '1px solid var(--border-color)' }}
@@ -319,27 +327,29 @@ const Navbar = () => {
                 </Link>
               )}
               <div style={{ display: 'flex', gap: '0.75rem', paddingTop: '0.5rem', flexWrap: 'wrap' }}>
-                <button
-                  onClick={toggleActiveMode}
-                  style={{
-                    flex: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.4rem',
-                    padding: '0.5rem 1rem',
-                    borderRadius: '20px',
-                    fontSize: '0.825rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    border: activeMode === 'requester' ? '1px solid rgba(99, 102, 241, 0.5)' : '1px solid rgba(16, 185, 129, 0.5)',
-                    background: activeMode === 'requester' ? 'rgba(99, 102, 241, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-                    color: activeMode === 'requester' ? 'var(--primary-light)' : 'var(--emerald)'
-                  }}
-                >
-                  <Repeat size={14} />
-                  {activeMode === 'requester' ? 'Requester Mode' : 'Tasker Mode'}
-                </button>
+                {user.role !== 'admin' && (
+                  <button
+                    onClick={toggleActiveMode}
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.4rem',
+                      padding: '0.5rem 1rem',
+                      borderRadius: '20px',
+                      fontSize: '0.825rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      border: activeMode === 'requester' ? '1px solid rgba(99, 102, 241, 0.5)' : '1px solid rgba(16, 185, 129, 0.5)',
+                      background: activeMode === 'requester' ? 'rgba(99, 102, 241, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                      color: activeMode === 'requester' ? 'var(--primary-light)' : 'var(--emerald)'
+                    }}
+                  >
+                    <Repeat size={14} />
+                    {activeMode === 'requester' ? 'Requester Mode' : 'Tasker Mode'}
+                  </button>
+                )}
                 <button
                   onClick={handleLogout}
                   className="btn btn-danger btn-sm"
@@ -352,6 +362,7 @@ const Navbar = () => {
           )}
 
           {!user && (
+
             <div style={{ display: 'flex', gap: '0.75rem', paddingTop: '0.5rem' }}>
               <Link to="/login" className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }}>Login</Link>
               <Link to="/register" className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }}>Register</Link>

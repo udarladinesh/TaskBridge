@@ -33,11 +33,11 @@ function App() {
               <Route path="/browse" element={<BrowseTasksPage />} />
               <Route path="/tasks/:id" element={<TaskDetailPage />} />
 
-              {/* Protected User Routes */}
+              {/* Protected User-Only Routes */}
               <Route
                 path="/dashboard"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute userOnly>
                     <DashboardPage />
                   </ProtectedRoute>
                 }
@@ -45,7 +45,7 @@ function App() {
               <Route
                 path="/create-task"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute userOnly>
                     <CreateTaskPage />
                   </ProtectedRoute>
                 }
@@ -53,11 +53,12 @@ function App() {
               <Route
                 path="/wallet"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute userOnly>
                     <WalletPage />
                   </ProtectedRoute>
                 }
               />
+
               <Route
                 path="/profile"
                 element={

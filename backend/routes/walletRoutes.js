@@ -5,12 +5,13 @@ const {
   depositFunds,
   withdrawFunds
 } = require('../controllers/walletController');
-const { protect } = require('../middleware/auth');
+const { protect, userOnly } = require('../middleware/auth');
 
-router.use(protect);
+router.use(protect, userOnly);
 
 router.get('/', getWalletDetails);
 router.post('/deposit', depositFunds);
 router.post('/withdraw', withdrawFunds);
 
 module.exports = router;
+

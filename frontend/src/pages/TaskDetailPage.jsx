@@ -500,7 +500,7 @@ const TaskDetailPage = () => {
                     </h3>
 
                     {/* Add Submission button — tasker only, task still active */}
-                    {isTasker && activeForSubmissions && activeMode === 'tasker' && (
+                    {!isAdmin && isTasker && activeForSubmissions && activeMode === 'tasker' && (
                       <button
                         onClick={() => { setProofDescription(''); setProofFiles([]); setSubmitModalOpen(true); }}
                         className="btn btn-primary btn-sm"
@@ -510,7 +510,7 @@ const TaskDetailPage = () => {
                         <PlusCircle size={16} /> Add Submission
                       </button>
                     )}
-                    {isTasker && activeForSubmissions && activeMode !== 'tasker' && (
+                    {!isAdmin && isTasker && activeForSubmissions && activeMode !== 'tasker' && (
                       <button
                         onClick={() => setActiveMode('tasker')}
                         className="btn btn-secondary btn-sm"
@@ -520,6 +520,7 @@ const TaskDetailPage = () => {
                       </button>
                     )}
                   </div>
+
 
                   {/* ── New submissions[] list ── */}
                   {hasNewSubmissions && (
@@ -592,8 +593,8 @@ const TaskDetailPage = () => {
                               )}
                             </div>
 
-                            {/* Tasker action buttons (active tasks only) */}
-                            {isTasker && activeForSubmissions && activeMode === 'tasker' && (
+                            {/* Tasker action buttons (active tasks only, non-admin) */}
+                            {!isAdmin && isTasker && activeForSubmissions && activeMode === 'tasker' && (
                               <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
                                 {!sub.isFinal && (
                                   <button
@@ -627,6 +628,7 @@ const TaskDetailPage = () => {
                               </div>
                             )}
                           </div>
+
 
                           {/* Description */}
                           {sub.description && (
@@ -835,137 +837,168 @@ const TaskDetailPage = () => {
               <div>
                 <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>YOUR STATUS:</span>
                 <p style={{ fontWeight: 700, color: 'var(--text-main)', margin: '0.15rem 0 0' }}>
-                  {isRequester
+                  {isAdmin
+                    ? 'Platform Administrator (Moderation & Safety)'
+                    : isRequester
                     ? 'Task Requester (Owner)'
                     : isTasker
                     ? 'Assigned Tasker'
                     : 'Community Member'}
-                  <span
-                    style={{
-                      marginLeft: '0.5rem',
-                      fontSize: '0.725rem',
-                      padding: '0.15rem 0.5rem',
-                      borderRadius: '10px',
-                      background: activeMode === 'requester' ? 'rgba(99, 102, 241, 0.2)' : 'rgba(16, 185, 129, 0.2)',
-                      color: activeMode === 'requester' ? 'var(--primary-light)' : 'var(--emerald)',
-                      border: activeMode === 'requester' ? '1px solid rgba(99, 102, 241, 0.35)' : '1px solid rgba(16, 185, 129, 0.35)'
-                    }}
-                  >
-                    {activeMode === 'requester' ? 'Requester Mode' : 'Tasker Mode'}
-                  </span>
+                  {!isAdmin && (
+                    <span
+                      style={{
+                        marginLeft: '0.5rem',
+                        fontSize: '0.725rem',
+                        padding: '0.15rem 0.5rem',
+                        borderRadius: '10px',
+                        background: activeMode === 'requester' ? 'rgba(99, 102, 241, 0.2)' : 'rgba(16, 185, 129, 0.2)',
+                        color: activeMode === 'requester' ? 'var(--primary-light)' : 'var(--emerald)',
+                        border: activeMode === 'requester' ? '1px solid rgba(99, 102, 241, 0.35)' : '1px solid rgba(16, 185, 129, 0.35)'
+                      }}
+                    >
+                      {activeMode === 'requester' ? 'Requester Mode' : 'Tasker Mode'}
+                    </span>
+                  )}
                 </p>
               </div>
 
               <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                {/* Non-owner action on OPEN task: Accept Task */}
-                {!isRequester && !isTasker && task.status === 'OPEN' && (
-                  <>
-                    {!user ? (
-                      <button onClick={() => navigate('/login')} className="btn btn-cyan btn-lg">
-                        <UserCheck size={20} /> Login to Accept
-                      </button>
-                    ) : activeMode === 'requester' ? (
-                      <button
-                        onClick={() => setActiveMode('tasker')}
-                        className="btn btn-cyan btn-lg"
-                        style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                      >
-                        <Repeat size={18} /> Switch to Tasker Mode to Accept
-                      </button>
-                    ) : (
-                      <button onClick={handleAcceptTask} className="btn btn-cyan btn-lg" disabled={submittingAction}>
-                        <UserCheck size={20} /> Accept Task
-                      </button>
-                    )}
-                  </>
+                {/* Admin-specific actions */}
+                {isAdmin && task.status === 'DISPUTED' && (
+                  <Link
+                    to="/admin"
+                    className="btn btn-rose btn-sm"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      color: '#fff',
+                      background: 'var(--rose)',
+                      border: 'none',
+                      padding: '0.5rem 0.9rem',
+                      borderRadius: '8px',
+                      fontWeight: 700,
+                      textDecoration: 'none'
+                    }}
+                  >
+                    <ShieldAlert size={16} /> Admin Portal (Resolve Dispute)
+                  </Link>
                 )}
 
-                {/* Assigned Tasker Actions on ACCEPTED / IN_PROGRESS / SUBMITTED */}
-                {isTasker && (task.status === 'ACCEPTED' || task.status === 'IN_PROGRESS' || task.status === 'SUBMITTED') && (
+                {/* Non-admin User Actions */}
+                {!isAdmin && (
                   <>
-                    {activeMode === 'requester' ? (
-                      <button
-                        onClick={() => setActiveMode('tasker')}
-                        className="btn btn-cyan btn-lg"
-                        style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                      >
-                        <Repeat size={18} /> Switch to Tasker Mode to Work on Task
-                      </button>
-                    ) : (
+                    {/* Non-owner action on OPEN task: Accept Task */}
+                    {!isRequester && !isTasker && task.status === 'OPEN' && (
                       <>
-                        {task.status === 'ACCEPTED' && (
-                          <button onClick={handleStartTask} className="btn btn-amber btn-lg" disabled={submittingAction}>
-                            <Play size={20} /> Start Task
+                        {!user ? (
+                          <button onClick={() => navigate('/login')} className="btn btn-cyan btn-lg">
+                            <UserCheck size={20} /> Login to Accept
+                          </button>
+                        ) : activeMode === 'requester' ? (
+                          <button
+                            onClick={() => setActiveMode('tasker')}
+                            className="btn btn-cyan btn-lg"
+                            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                          >
+                            <Repeat size={18} /> Switch to Tasker Mode to Accept
+                          </button>
+                        ) : (
+                          <button onClick={handleAcceptTask} className="btn btn-cyan btn-lg" disabled={submittingAction}>
+                            <UserCheck size={20} /> Accept Task
                           </button>
                         )}
-                        <button
-                          onClick={() => { setProofDescription(''); setProofFiles([]); setSubmitModalOpen(true); }}
-                          className="btn btn-primary btn-lg"
-                          disabled={submittingAction}
-                          id="action-bar-add-submission-btn"
-                        >
-                          <PlusCircle size={20} /> Add Submission
-                        </button>
                       </>
                     )}
-                  </>
-                )}
 
-                {/* Task Requester Actions on SUBMITTED */}
-                {isRequester && task.status === 'SUBMITTED' && (
-                  <>
-                    {activeMode === 'tasker' ? (
-                      <button
-                        onClick={() => setActiveMode('requester')}
-                        className="btn btn-primary btn-lg"
-                        style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                      >
-                        <Repeat size={18} /> Switch to Requester Mode to Review
-                      </button>
-                    ) : (
+                    {/* Assigned Tasker Actions on ACCEPTED / IN_PROGRESS / SUBMITTED */}
+                    {isTasker && (task.status === 'ACCEPTED' || task.status === 'IN_PROGRESS' || task.status === 'SUBMITTED') && (
                       <>
-                        <button onClick={handleApproveTask} className="btn btn-success btn-lg" disabled={submittingAction}>
-                          <ThumbsUp size={20} /> Approve & Release Reward
-                        </button>
-                        <button onClick={() => setDisputeModalOpen(true)} className="btn btn-danger btn-lg" disabled={submittingAction}>
-                          <AlertTriangle size={20} /> Dispute
-                        </button>
+                        {activeMode === 'requester' ? (
+                          <button
+                            onClick={() => setActiveMode('tasker')}
+                            className="btn btn-cyan btn-lg"
+                            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                          >
+                            <Repeat size={18} /> Switch to Tasker Mode to Work on Task
+                          </button>
+                        ) : (
+                          <>
+                            {task.status === 'ACCEPTED' && (
+                              <button onClick={handleStartTask} className="btn btn-amber btn-lg" disabled={submittingAction}>
+                                <Play size={20} /> Start Task
+                              </button>
+                            )}
+                            <button
+                              onClick={() => { setProofDescription(''); setProofFiles([]); setSubmitModalOpen(true); }}
+                              className="btn btn-primary btn-lg"
+                              disabled={submittingAction}
+                              id="action-bar-add-submission-btn"
+                            >
+                              <PlusCircle size={20} /> Add Submission
+                            </button>
+                          </>
+                        )}
                       </>
                     )}
-                  </>
-                )}
 
-                {/* Requester action: Cancel Task */}
-                {isRequester && (task.status === 'OPEN' || task.status === 'ACCEPTED') && (
-                  <>
-                    {activeMode === 'tasker' ? (
-                      <button
-                        onClick={() => setActiveMode('requester')}
-                        className="btn btn-secondary"
-                        style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                      >
-                        <Repeat size={16} /> Switch to Requester Mode to Cancel
+                    {/* Task Requester Actions on SUBMITTED */}
+                    {isRequester && task.status === 'SUBMITTED' && (
+                      <>
+                        {activeMode === 'tasker' ? (
+                          <button
+                            onClick={() => setActiveMode('requester')}
+                            className="btn btn-primary btn-lg"
+                            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                          >
+                            <Repeat size={18} /> Switch to Requester Mode to Review
+                          </button>
+                        ) : (
+                          <>
+                            <button onClick={handleApproveTask} className="btn btn-success btn-lg" disabled={submittingAction}>
+                              <ThumbsUp size={20} /> Approve & Release Reward
+                            </button>
+                            <button onClick={() => setDisputeModalOpen(true)} className="btn btn-danger btn-lg" disabled={submittingAction}>
+                              <AlertTriangle size={20} /> Dispute
+                            </button>
+                          </>
+                        )}
+                      </>
+                    )}
+
+                    {/* Requester action: Cancel Task */}
+                    {isRequester && (task.status === 'OPEN' || task.status === 'ACCEPTED') && (
+                      <>
+                        {activeMode === 'tasker' ? (
+                          <button
+                            onClick={() => setActiveMode('requester')}
+                            className="btn btn-secondary"
+                            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                          >
+                            <Repeat size={16} /> Switch to Requester Mode to Cancel
+                          </button>
+                        ) : (
+                          <button onClick={handleCancelTask} className="btn btn-secondary" disabled={submittingAction}>
+                            <XCircle size={18} /> Cancel Task (Refund Escrow)
+                          </button>
+                        )}
+                      </>
+                    )}
+
+                    {/* Completed Task Rating Action */}
+                    {task.status === 'COMPLETED' && (isRequester || isTasker) && (
+                      <button onClick={() => setRatingModalOpen(true)} className="btn btn-amber">
+                        Rate Counterpart Participant
                       </button>
-                    ) : (
-                      <button onClick={handleCancelTask} className="btn btn-secondary" disabled={submittingAction}>
-                        <XCircle size={18} /> Cancel Task (Refund Escrow)
+                    )}
+
+                    {/* Report Task Action */}
+                    {user && (
+                      <button onClick={() => setReportModalOpen(true)} className="btn btn-secondary btn-sm" title="Report safety violation">
+                        <ShieldAlert size={16} color="var(--rose)" /> Report
                       </button>
                     )}
                   </>
-                )}
-
-                {/* Completed Task Rating Action */}
-                {task.status === 'COMPLETED' && (isRequester || isTasker) && (
-                  <button onClick={() => setRatingModalOpen(true)} className="btn btn-amber">
-                    Rate Counterpart Participant
-                  </button>
-                )}
-
-                {/* Report Task Action */}
-                {user && (
-                  <button onClick={() => setReportModalOpen(true)} className="btn btn-secondary btn-sm" title="Report safety violation">
-                    <ShieldAlert size={16} color="var(--rose)" /> Report
-                  </button>
                 )}
               </div>
             </div>
@@ -986,63 +1019,66 @@ const TaskDetailPage = () => {
 
           {/* Right Sidebar Info */}
           <div>
-            {/* Reward & Escrow Status Box */}
-            <div className="glass-card" style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.05em' }}>
-                TASK REWARD
-              </span>
-              <h2 style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--emerald)', margin: '0.25rem 0' }}>
-                ₹{task.rewardAmount}
-              </h2>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-sub)' }}>Currency: {task.currency}</span>
+            {/* Reward & Escrow Status Box (Non-Admin Users Only) */}
+            {!isAdmin && (
+              <div className="glass-card" style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.05em' }}>
+                  TASK REWARD
+                </span>
+                <h2 style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--emerald)', margin: '0.25rem 0' }}>
+                  ₹{task.rewardAmount}
+                </h2>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-sub)' }}>Currency: {task.currency}</span>
 
-              {/* Escrow Status Pill */}
-              <div
-                style={{
-                  marginTop: '1rem',
-                  padding: '0.75rem',
-                  borderRadius: '8px',
-                  background:
-                    task.escrowStatus === 'RELEASED'
-                      ? 'rgba(16, 185, 129, 0.15)'
-                      : task.escrowStatus === 'REFUNDED'
-                      ? 'rgba(99, 102, 241, 0.15)'
-                      : 'rgba(245, 158, 11, 0.15)',
-                  border:
-                    task.escrowStatus === 'RELEASED'
-                      ? '1px solid rgba(16, 185, 129, 0.3)'
-                      : task.escrowStatus === 'REFUNDED'
-                      ? '1px solid rgba(99, 102, 241, 0.3)'
-                      : '1px solid rgba(245, 158, 11, 0.3)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.4rem',
-                  fontSize: '0.8rem',
-                  fontWeight: 700,
-                  color:
-                    task.escrowStatus === 'RELEASED'
-                      ? 'var(--emerald)'
-                      : task.escrowStatus === 'REFUNDED'
-                      ? 'var(--primary-light)'
-                      : '#f59e0b'
-                }}
-              >
-                {task.escrowStatus === 'RELEASED' ? (
-                  <>
-                    <CheckCircle2 size={15} /> Escrow Released to Tasker
-                  </>
-                ) : task.escrowStatus === 'REFUNDED' ? (
-                  <>
-                    <Sparkles size={15} /> Escrow Refunded to Requester
-                  </>
-                ) : (
-                  <>
-                    <Lock size={15} /> ₹{task.rewardAmount} Locked in Escrow
-                  </>
-                )}
+                {/* Escrow Status Pill */}
+                <div
+                  style={{
+                    marginTop: '1rem',
+                    padding: '0.75rem',
+                    borderRadius: '8px',
+                    background:
+                      task.escrowStatus === 'RELEASED'
+                        ? 'rgba(16, 185, 129, 0.15)'
+                        : task.escrowStatus === 'REFUNDED'
+                        ? 'rgba(99, 102, 241, 0.15)'
+                        : 'rgba(245, 158, 11, 0.15)',
+                    border:
+                      task.escrowStatus === 'RELEASED'
+                        ? '1px solid rgba(16, 185, 129, 0.3)'
+                        : task.escrowStatus === 'REFUNDED'
+                        ? '1px solid rgba(99, 102, 241, 0.3)'
+                        : '1px solid rgba(245, 158, 11, 0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.4rem',
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    color:
+                      task.escrowStatus === 'RELEASED'
+                        ? 'var(--emerald)'
+                        : task.escrowStatus === 'REFUNDED'
+                        ? 'var(--primary-light)'
+                        : '#f59e0b'
+                  }}
+                >
+                  {task.escrowStatus === 'RELEASED' ? (
+                    <>
+                      <CheckCircle2 size={15} /> Escrow Released to Tasker
+                    </>
+                  ) : task.escrowStatus === 'REFUNDED' ? (
+                    <>
+                      <Sparkles size={15} /> Escrow Refunded to Requester
+                    </>
+                  ) : (
+                    <>
+                      <Lock size={15} /> ₹{task.rewardAmount} Locked in Escrow
+                    </>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
+
 
             {/* Requester Profile Card */}
             <div className="glass-card" style={{ marginBottom: '1.5rem' }}>

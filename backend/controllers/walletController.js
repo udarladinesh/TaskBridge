@@ -7,6 +7,13 @@ const { sendNotification } = require('../utils/notificationHelper');
 // @access  Private
 exports.getWalletDetails = async (req, res) => {
   try {
+    if (req.user.role === 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admins do not have access to wallet or financial features'
+      });
+    }
+
     const user = await User.findById(req.user._id);
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
@@ -35,7 +42,15 @@ exports.getWalletDetails = async (req, res) => {
 // @access  Private
 exports.depositFunds = async (req, res) => {
   try {
+    if (req.user.role === 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admins do not have access to wallet deposit features'
+      });
+    }
+
     const { amount } = req.body;
+
     const numAmount = Number(amount);
 
     if (!numAmount || numAmount <= 0) {
@@ -84,7 +99,15 @@ exports.depositFunds = async (req, res) => {
 // @access  Private
 exports.withdrawFunds = async (req, res) => {
   try {
+    if (req.user.role === 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admins do not have access to wallet withdrawal features'
+      });
+    }
+
     const { amount, bankDetails } = req.body;
+
     const numAmount = Number(amount);
 
     if (!numAmount || numAmount <= 0) {

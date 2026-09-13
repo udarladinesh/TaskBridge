@@ -87,8 +87,8 @@ const BrowseTasksPage = () => {
           </p>
         </div>
 
-        {/* Mode Notification Banner if viewing in Requester Mode */}
-        {user && activeMode === 'requester' && (
+        {/* Mode Notification Banner if viewing in Requester Mode (Non-Admin Users Only) */}
+        {user && user.role !== 'admin' && activeMode === 'requester' && (
           <div
             style={{
               background: 'rgba(99, 102, 241, 0.12)',
@@ -125,6 +125,7 @@ const BrowseTasksPage = () => {
             </button>
           </div>
         )}
+
 
         {/* Search Bar & Filters Form */}
         <div className="glass-card" style={{ marginBottom: '2rem' }}>
@@ -198,16 +199,19 @@ const BrowseTasksPage = () => {
                 />
               </div>
 
-              <div>
-                <label className="form-label" style={{ fontSize: '0.8rem' }}>Reward Range</label>
-                <select className="form-select" value={rewardRange} onChange={(e) => setRewardRange(e.target.value)}>
-                  <option value="Any">Any Reward</option>
-                  <option value="0-250">₹0 – ₹250</option>
-                  <option value="250-500">₹250 – ₹500</option>
-                  <option value="500-1000">₹500 – ₹1000</option>
-                  <option value="1000+">₹1000+</option>
-                </select>
-              </div>
+              {user?.role !== 'admin' && (
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.8rem' }}>Reward Range</label>
+                  <select className="form-select" value={rewardRange} onChange={(e) => setRewardRange(e.target.value)}>
+                    <option value="Any">Any Reward</option>
+                    <option value="0-250">₹0 – ₹250</option>
+                    <option value="250-500">₹250 – ₹500</option>
+                    <option value="500-1000">₹500 – ₹1000</option>
+                    <option value="1000+">₹1000+</option>
+                  </select>
+                </div>
+              )}
+
 
               <div>
                 <label className="form-label" style={{ fontSize: '0.8rem' }}>Status</label>

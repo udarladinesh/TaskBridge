@@ -53,4 +53,14 @@ const admin = (req, res, next) => {
   }
 };
 
-module.exports = { protect, admin };
+const userOnly = (req, res, next) => {
+  if (req.user && req.user.role === 'admin') {
+    return res
+      .status(403)
+      .json({ success: false, message: 'Access denied: Feature not available for admin role' });
+  }
+  next();
+};
+
+module.exports = { protect, admin, userOnly };
+

@@ -93,6 +93,13 @@ const checkTaskExpirations = async (tasks) => {
 // @access  Private
 exports.createTask = async (req, res) => {
   try {
+    if (req.user.role === 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admins cannot create or post tasks'
+      });
+    }
+
     // Prevent unauthorized task creation if operating in Tasker mode
     const activeMode = req.headers['x-active-mode'] || 'requester';
     if (activeMode.toLowerCase() === 'tasker') {
@@ -101,6 +108,7 @@ exports.createTask = async (req, res) => {
         message: 'Taskers are not authorized to create tasks. Please switch to Requester mode.'
       });
     }
+
 
     const {
       title,
@@ -302,6 +310,10 @@ exports.getTaskById = async (req, res) => {
 // @access  Private
 exports.getMyPostedTasks = async (req, res) => {
   try {
+    if (req.user.role === 'admin') {
+      return res.json({ success: true, count: 0, tasks: [] });
+    }
+
     let tasks = await Task.find({ requester: req.user._id })
       .populate('tasker', 'name email profileImage')
       .sort({ createdAt: -1 });
@@ -323,6 +335,10 @@ exports.getMyPostedTasks = async (req, res) => {
 // @access  Private
 exports.getMyAcceptedTasks = async (req, res) => {
   try {
+    if (req.user.role === 'admin') {
+      return res.json({ success: true, count: 0, tasks: [] });
+    }
+
     const tasks = await Task.find({ tasker: req.user._id })
       .populate('requester', 'name email profileImage')
       .sort({ createdAt: -1 });
@@ -342,6 +358,13 @@ exports.getMyAcceptedTasks = async (req, res) => {
 // @access  Private
 exports.acceptTask = async (req, res) => {
   try {
+    if (req.user.role === 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admins cannot accept tasks'
+      });
+    }
+
     const activeMode = req.headers['x-active-mode'] || 'requester';
     if (activeMode.toLowerCase() !== 'tasker') {
       return res.status(403).json({
@@ -425,7 +448,15 @@ exports.acceptTask = async (req, res) => {
 // @access  Private
 exports.startTask = async (req, res) => {
   try {
+    if (req.user.role === 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admins cannot start tasks'
+      });
+    }
+
     const activeMode = req.headers['x-active-mode'] || 'requester';
+
     if (activeMode.toLowerCase() !== 'tasker') {
       return res.status(403).json({
         success: false,
@@ -483,6 +514,13 @@ exports.startTask = async (req, res) => {
 // @access  Private
 exports.submitTask = async (req, res) => {
   try {
+    if (req.user.role === 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admins cannot submit task proofs'
+      });
+    }
+
     const activeMode = req.headers['x-active-mode'] || 'requester';
     if (activeMode.toLowerCase() !== 'tasker') {
       return res.status(403).json({
@@ -579,6 +617,13 @@ exports.submitTask = async (req, res) => {
 // @access  Private (assigned tasker only, active tasks only)
 exports.deleteSubmission = async (req, res) => {
   try {
+    if (req.user.role === 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admins cannot delete task submissions'
+      });
+    }
+
     const activeMode = req.headers['x-active-mode'] || 'requester';
     if (activeMode.toLowerCase() !== 'tasker') {
       return res.status(403).json({
@@ -656,7 +701,15 @@ exports.deleteSubmission = async (req, res) => {
 // @access  Private (assigned tasker only, active tasks only)
 exports.markSubmissionFinal = async (req, res) => {
   try {
+    if (req.user.role === 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admins cannot mark submissions as final'
+      });
+    }
+
     const activeMode = req.headers['x-active-mode'] || 'requester';
+
     if (activeMode.toLowerCase() !== 'tasker') {
       return res.status(403).json({
         success: false,
@@ -722,13 +775,19 @@ exports.markSubmissionFinal = async (req, res) => {
   }
 };
 
-
-
 // @desc    Approve submission & release escrow reward
+
 // @route   POST /api/tasks/:id/approve
 // @access  Private
 exports.approveTask = async (req, res) => {
   try {
+    if (req.user.role === 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admins cannot approve tasks as requester. Admin dispute rulings should be performed in the Admin Portal.'
+      });
+    }
+
     const activeMode = req.headers['x-active-mode'] || 'requester';
     if (activeMode.toLowerCase() === 'tasker') {
       return res.status(403).json({
@@ -826,6 +885,13 @@ exports.approveTask = async (req, res) => {
 // @access  Private
 exports.disputeTask = async (req, res) => {
   try {
+    if (req.user.role === 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admins cannot dispute tasks as requester'
+      });
+    }
+
     const activeMode = req.headers['x-active-mode'] || 'requester';
     if (activeMode.toLowerCase() === 'tasker') {
       return res.status(403).json({
@@ -897,6 +963,13 @@ exports.disputeTask = async (req, res) => {
 // @access  Private
 exports.cancelTask = async (req, res) => {
   try {
+    if (req.user.role === 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admins cannot cancel tasks as requester'
+      });
+    }
+
     const activeMode = req.headers['x-active-mode'] || 'requester';
     if (activeMode.toLowerCase() === 'tasker') {
       return res.status(403).json({
@@ -972,3 +1045,4 @@ exports.cancelTask = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+

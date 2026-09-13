@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import TaskCard from '../components/TaskCard';
@@ -29,8 +29,17 @@ const STATUS_CONFIG = [
 ];
 
 const DashboardPage = () => {
+  const navigate = useNavigate();
   const { user, activeMode, setActiveMode } = useAuth();
+
+  useEffect(() => {
+    if (user?.role === 'admin') {
+      navigate('/admin', { replace: true });
+    }
+  }, [user, navigate]);
+
   const [postedTasks, setPostedTasks] = useState([]);
+
   const [acceptedTasks, setAcceptedTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

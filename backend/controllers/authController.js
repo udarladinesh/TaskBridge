@@ -139,14 +139,23 @@ exports.loginUser = async (req, res) => {
 exports.getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    const userObj = user.toObject();
+    if (userObj.role === 'admin') {
+      delete userObj.walletBalance;
+      delete userObj.escrowBalance;
+    }
     res.json({
       success: true,
-      user
+      user: userObj
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 // @desc    Update profile info (name, bio, profileImage)
 // @route   PUT /api/auth/profile

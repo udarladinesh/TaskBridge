@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import {
@@ -19,7 +20,17 @@ import {
 } from 'lucide-react';
 
 const WalletPage = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user?.role === 'admin') {
+      navigate('/admin', { replace: true });
+    }
+  }, [user, navigate]);
+
   const [walletData, setWalletData] = useState(null);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [depositAmount, setDepositAmount] = useState('1000');

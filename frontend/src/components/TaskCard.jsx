@@ -1,9 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { MapPin, Clock, IndianRupee, Camera, ArrowRight, User } from 'lucide-react';
 import TaskStatusBadge from './TaskStatusBadge';
 
 const TaskCard = ({ task }) => {
+  const { user } = useAuth();
   const {
     _id,
     title,
@@ -16,6 +18,7 @@ const TaskCard = ({ task }) => {
     status,
     requester
   } = task;
+
 
   const formattedCategory = category
     ? category.replace('_', ' ').toUpperCase()
@@ -103,12 +106,21 @@ const TaskCard = ({ task }) => {
           marginTop: 'auto'
         }}
       >
-        <div>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>REWARD</span>
-          <span style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--emerald)' }}>
-            ₹{rewardAmount}
-          </span>
-        </div>
+        {user?.role !== 'admin' ? (
+          <div>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>REWARD</span>
+            <span style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--emerald)' }}>
+              ₹{rewardAmount}
+            </span>
+          </div>
+        ) : (
+          <div>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>TASK ID</span>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-sub)' }}>
+              #{_id.substring(_id.length - 6).toUpperCase()}
+            </span>
+          </div>
+        )}
 
         <Link to={`/tasks/${_id}`} className="btn btn-secondary btn-sm">
           View Task <ArrowRight size={14} />
@@ -117,5 +129,6 @@ const TaskCard = ({ task }) => {
     </div>
   );
 };
+
 
 export default TaskCard;

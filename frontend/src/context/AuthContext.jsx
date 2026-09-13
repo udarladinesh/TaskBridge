@@ -9,15 +9,20 @@ export const AuthProvider = ({ children }) => {
   const [activeMode, setActiveModeState] = useState(localStorage.getItem('activeMode') || 'requester');
   const [loading, setLoading] = useState(true);
 
+  const currentActiveMode = user?.role === 'admin' ? 'admin' : activeMode;
+
   const setActiveMode = (mode) => {
+    if (user?.role === 'admin') return;
     const validMode = mode === 'tasker' ? 'tasker' : 'requester';
     localStorage.setItem('activeMode', validMode);
     setActiveModeState(validMode);
   };
 
   const toggleActiveMode = () => {
+    if (user?.role === 'admin') return;
     setActiveMode(activeMode === 'requester' ? 'tasker' : 'requester');
   };
+
 
   useEffect(() => {
     const fetchMe = async () => {
@@ -59,7 +64,7 @@ export const AuthProvider = ({ children }) => {
       value={{
         user,
         token,
-        activeMode,
+        activeMode: currentActiveMode,
         setActiveMode,
         toggleActiveMode,
         loading,
@@ -68,6 +73,7 @@ export const AuthProvider = ({ children }) => {
         updateUser
       }}
     >
+
       {children}
     </AuthContext.Provider>
   );

@@ -24,7 +24,14 @@ const CreateTaskPage = () => {
   const navigate = useNavigate();
   const { user, activeMode, setActiveMode } = useAuth();
 
+  useEffect(() => {
+    if (user?.role === 'admin') {
+      navigate('/admin', { replace: true });
+    }
+  }, [user, navigate]);
+
   const [title, setTitle] = useState('');
+
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('verification');
 
