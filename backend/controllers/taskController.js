@@ -478,7 +478,7 @@ exports.startTask = async (req, res) => {
   }
 };
 
-// @desc    Submit task proof & run AI verification
+// @desc    Add a submission (proof) to the task  — supports multiple submissions
 // @route   POST /api/tasks/:id/submit
 // @access  Private
 exports.submitTask = async (req, res) => {
@@ -504,10 +504,11 @@ exports.submitTask = async (req, res) => {
       });
     }
 
-    if (task.status !== 'IN_PROGRESS' && task.status !== 'ACCEPTED') {
+    const allowedStatuses = ['ACCEPTED', 'IN_PROGRESS', 'SUBMITTED'];
+    if (!allowedStatuses.includes(task.status)) {
       return res.status(400).json({
         success: false,
-        message: `Cannot submit task with status: ${task.status}`
+        message: `Cannot add a submission when task status is: ${task.status}`
       });
     }
 
@@ -521,20 +522,34 @@ exports.submitTask = async (req, res) => {
     const submissionData = {
       submittedAt: new Date(),
       description: description || '',
-      proofFiles
+      proofFiles,
+      isFinal: false
     };
 
-    task.submission = submissionData;
-    task.status = 'SUBMITTED';
-
-    // Automated AI proof verification analysis
+    // Run AI proof verification for this individual submission
     const aiVerification = verifyTaskProof({
       task,
       submission: submissionData
     });
+    submissionData.aiProofVerification = aiVerification;
+
+    // Push into the submissions array
+    task.submissions.push(submissionData);
+
+    // Move task to SUBMITTED status on first submission; keep it on subsequent ones
+    if (task.status !== 'SUBMITTED') {
+      task.status = 'SUBMITTED';
+    }
+
+    // Keep the task-level aiProofVerification in sync with the latest submission
     task.aiProofVerification = aiVerification;
 
     await task.save();
+
+    // Re-populate so the response contains the saved submission _id
+    const savedTask = await Task.findById(task._id)
+      .populate('requester', 'name email profileImage bio createdAt')
+      .populate('tasker', 'name email profileImage bio createdAt');
 
     // Dispatch notification to requester
     await sendNotification({
@@ -542,15 +557,15 @@ exports.submitTask = async (req, res) => {
       actor: req.user._id,
       task: task._id,
       type: 'TASK_SUBMITTED',
-      title: 'Proof Submitted for Review',
-      message: `${req.user.name} has submitted completion proof for "${task.title.substring(0, 30)}...".`,
+      title: 'New Proof Submitted for Review',
+      message: `${req.user.name} has added a new submission for "${task.title.substring(0, 30)}...".`,
       link: `/tasks/${task._id}`
     });
 
     res.json({
       success: true,
-      message: 'Task submission uploaded successfully',
-      task,
+      message: 'Submission added successfully',
+      task: savedTask,
       aiVerification
     });
   } catch (error) {
@@ -558,6 +573,156 @@ exports.submitTask = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// @desc    Delete a specific submission
+// @route   DELETE /api/tasks/:id/submissions/:subId
+// @access  Private (assigned tasker only, active tasks only)
+exports.deleteSubmission = async (req, res) => {
+  try {
+    const activeMode = req.headers['x-active-mode'] || 'requester';
+    if (activeMode.toLowerCase() !== 'tasker') {
+      return res.status(403).json({
+        success: false,
+        message: 'You must switch to Tasker mode to delete submissions.'
+      });
+    }
+
+    const task = await Task.findById(req.params.id);
+
+    if (!task) {
+      return res.status(404).json({ success: false, message: 'Task not found' });
+    }
+
+    if (!task.tasker || task.tasker.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only the assigned tasker can delete submissions'
+      });
+    }
+
+    const blockedStatuses = ['COMPLETED', 'CANCELLED', 'EXPIRED', 'DISPUTED'];
+    if (blockedStatuses.includes(task.status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot delete submissions when task status is: ${task.status}`
+      });
+    }
+
+    const subId = req.params.subId;
+    const submissionIndex = task.submissions.findIndex(
+      (s) => s._id.toString() === subId
+    );
+
+    if (submissionIndex === -1) {
+      return res.status(404).json({ success: false, message: 'Submission not found' });
+    }
+
+    const wasFinaL = task.submissions[submissionIndex].isFinal;
+
+    // Remove the submission
+    task.submissions.splice(submissionIndex, 1);
+
+    if (task.submissions.length === 0) {
+      // No submissions left — roll back to IN_PROGRESS
+      task.status = 'IN_PROGRESS';
+      task.aiProofVerification = undefined;
+    } else if (wasFinaL) {
+      // The deleted submission was final; clear final status (no auto-selection)
+      task.submissions.forEach((s) => { s.isFinal = false; });
+      // Update root AI verification to the most recent remaining submission
+      const latest = task.submissions[task.submissions.length - 1];
+      task.aiProofVerification = latest.aiProofVerification;
+    }
+
+    await task.save();
+
+    const savedTask = await Task.findById(task._id)
+      .populate('requester', 'name email profileImage bio createdAt')
+      .populate('tasker', 'name email profileImage bio createdAt');
+
+    res.json({
+      success: true,
+      message: 'Submission deleted successfully',
+      task: savedTask
+    });
+  } catch (error) {
+    console.error('Delete Submission Error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Mark a specific submission as the final submission
+// @route   PATCH /api/tasks/:id/submissions/:subId/final
+// @access  Private (assigned tasker only, active tasks only)
+exports.markSubmissionFinal = async (req, res) => {
+  try {
+    const activeMode = req.headers['x-active-mode'] || 'requester';
+    if (activeMode.toLowerCase() !== 'tasker') {
+      return res.status(403).json({
+        success: false,
+        message: 'You must switch to Tasker mode to mark a submission as final.'
+      });
+    }
+
+    const task = await Task.findById(req.params.id);
+
+    if (!task) {
+      return res.status(404).json({ success: false, message: 'Task not found' });
+    }
+
+    if (!task.tasker || task.tasker.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only the assigned tasker can mark a submission as final'
+      });
+    }
+
+    const blockedStatuses = ['COMPLETED', 'CANCELLED', 'EXPIRED', 'DISPUTED'];
+    if (blockedStatuses.includes(task.status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot change final submission when task status is: ${task.status}`
+      });
+    }
+
+    const subId = req.params.subId;
+    let targetSubmission = null;
+
+    // Clear isFinal on all; set only on target
+    task.submissions.forEach((s) => {
+      if (s._id.toString() === subId) {
+        s.isFinal = true;
+        targetSubmission = s;
+      } else {
+        s.isFinal = false;
+      }
+    });
+
+    if (!targetSubmission) {
+      return res.status(404).json({ success: false, message: 'Submission not found' });
+    }
+
+    // Sync root-level AI verification to the newly chosen final submission
+    task.aiProofVerification = targetSubmission.aiProofVerification;
+
+    await task.save();
+
+    const savedTask = await Task.findById(task._id)
+      .populate('requester', 'name email profileImage bio createdAt')
+      .populate('tasker', 'name email profileImage bio createdAt');
+
+    res.json({
+      success: true,
+      message: 'Submission marked as final',
+      task: savedTask
+    });
+  } catch (error) {
+    console.error('Mark Submission Final Error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
 
 // @desc    Approve submission & release escrow reward
 // @route   POST /api/tasks/:id/approve

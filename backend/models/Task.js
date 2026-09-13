@@ -96,11 +96,36 @@ const taskSchema = new mongoose.Schema(
       ref: 'User',
       default: null
     },
+    // ── Legacy single-submission field (kept for backward compatibility) ──
+    // Existing tasks that already have data here are unaffected; new code
+    // only reads/writes to the `submissions` array below.
     submission: {
       submittedAt: { type: Date },
       description: { type: String, default: '' },
       proofFiles: [{ type: String }]
     },
+
+    // ── Multiple submissions array (new) ──
+    submissions: [
+      {
+        submittedAt: { type: Date, default: Date.now },
+        description: { type: String, default: '' },
+        proofFiles: [{ type: String }],
+        isFinal: { type: Boolean, default: false },
+        // Per-submission AI proof verification result
+        aiProofVerification: {
+          verifiedAt: { type: Date },
+          matchScore: { type: Number },
+          confidence: { type: String, enum: ['HIGH', 'MEDIUM', 'LOW'] },
+          recommendation: {
+            type: String,
+            enum: ['RECOMMEND_APPROVE', 'MANUAL_REVIEW', 'FLAG_CONCERNS']
+          },
+          findings: [{ type: String }],
+          summary: { type: String }
+        }
+      }
+    ],
     dispute: {
       disputedAt: { type: Date },
       reason: { type: String, default: '' }

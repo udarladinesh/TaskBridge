@@ -9,6 +9,8 @@ const {
   acceptTask,
   startTask,
   submitTask,
+  deleteSubmission,
+  markSubmissionFinal,
   approveTask,
   disputeTask,
   cancelTask
@@ -40,6 +42,10 @@ router.post(
 router.post('/:id/approve', protect, approveTask);
 router.post('/:id/dispute', protect, disputeTask);
 router.post('/:id/cancel', protect, cancelTask);
+
+// Multiple-submissions management routes
+router.delete('/:id/submissions/:subId', protect, deleteSubmission);
+router.patch('/:id/submissions/:subId/final', protect, markSubmissionFinal);
 
 // Task safety report
 router.post('/:id/report', protect, createReport);

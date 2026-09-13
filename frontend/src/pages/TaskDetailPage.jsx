@@ -28,7 +28,11 @@ import {
   Sparkles,
   ShieldCheck,
   MessageSquare,
-  Repeat
+  Repeat,
+  PlusCircle,
+  Trash2,
+  Star,
+  StarOff
 } from 'lucide-react';
 
 const TaskDetailPage = () => {
@@ -58,6 +62,11 @@ const TaskDetailPage = () => {
   const [ratingComment, setRatingComment] = useState('');
 
   const [submittingAction, setSubmittingAction] = useState(false);
+
+  // Multiple-submissions management state
+  const [deletingSubId, setDeletingSubId] = useState(null);
+  const [markingFinalSubId, setMarkingFinalSubId] = useState(null);
+
 
   const fetchTaskDetails = async () => {
     setLoading(true);
@@ -282,7 +291,51 @@ const TaskDetailPage = () => {
     }
   };
 
+  // ── New: Delete a specific submission ──
+  const handleDeleteSubmission = async (subId) => {
+    if (activeMode !== 'tasker') {
+      setError('You must switch to Tasker mode to delete submissions.');
+      return;
+    }
+    if (!window.confirm('Delete this submission? This action cannot be undone.')) return;
+    setDeletingSubId(subId);
+    setError('');
+    try {
+      const res = await api.delete(`/tasks/${id}/submissions/${subId}`);
+      if (res.data.success) {
+        setActionSuccess('Submission deleted successfully.');
+        setTask(res.data.task);
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to delete submission');
+    } finally {
+      setDeletingSubId(null);
+    }
+  };
+
+  // ── New: Mark a submission as final ──
+  const handleMarkFinal = async (subId) => {
+    if (activeMode !== 'tasker') {
+      setError('You must switch to Tasker mode to mark a submission as final.');
+      return;
+    }
+    setMarkingFinalSubId(subId);
+    setError('');
+    try {
+      const res = await api.patch(`/tasks/${id}/submissions/${subId}/final`);
+      if (res.data.success) {
+        setActionSuccess('Submission marked as final. AI verification panel updated.');
+        setTask(res.data.task);
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to mark submission as final');
+    } finally {
+      setMarkingFinalSubId(null);
+    }
+  };
+
   const canParticipateInChat = user && (isRequester || isTasker || isAdmin) && task.status !== 'OPEN';
+
 
   return (
     <div className="page-wrapper">
@@ -417,56 +470,264 @@ const TaskDetailPage = () => {
               </div>
             </div>
 
-            {/* Task Submission Box (If Submitted, Completed, or Disputed) */}
-            {task.submission && (task.submission.description || (task.submission.proofFiles && task.submission.proofFiles.length > 0)) && (
-              <div className="glass-card" style={{ marginBottom: '1.5rem', border: '1px solid rgba(168, 85, 247, 0.4)' }}>
-                <h3 style={{ fontSize: '1.2rem', marginBottom: '1rem', color: 'var(--purple)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <FileText size={22} /> Tasker Proof Submission
-                </h3>
+            {/* ── Multiple Submissions Panel ── */}
+            {(() => {
+              // Allowed statuses for add/delete/mark-final actions
+              const activeForSubmissions = ['ACCEPTED', 'IN_PROGRESS', 'SUBMITTED'].includes(task.status);
 
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
-                  Submitted on: {new Date(task.submission.submittedAt).toLocaleString()}
-                </p>
+              // Combine: new submissions[] array + legacy task.submission (backward compat)
+              const hasNewSubmissions = task.submissions && task.submissions.length > 0;
+              const hasLegacySubmission =
+                !hasNewSubmissions &&
+                task.submission &&
+                (task.submission.description || (task.submission.proofFiles && task.submission.proofFiles.length > 0));
 
-                {task.submission.description && (
-                  <div style={{ marginBottom: '1rem' }}>
-                    <strong style={{ fontSize: '0.9rem', color: 'var(--text-sub)' }}>Completion Description:</strong>
-                    <p style={{ background: 'rgba(0,0,0,0.3)', padding: '0.75rem', borderRadius: '6px', marginTop: '0.25rem', color: 'var(--text-main)' }}>
-                      {task.submission.description}
-                    </p>
+              if (!hasNewSubmissions && !hasLegacySubmission && !isTasker) return null;
+              if (!hasNewSubmissions && !hasLegacySubmission && isTasker && !activeForSubmissions) return null;
+
+              return (
+                <div className="glass-card" style={{ marginBottom: '1.5rem', border: '1px solid rgba(168, 85, 247, 0.4)' }}>
+                  {/* Panel header */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+                    <h3 style={{ fontSize: '1.2rem', color: 'var(--purple)', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+                      <FileText size={22} />
+                      Tasker Proof Submissions
+                      {hasNewSubmissions && (
+                        <span style={{ fontSize: '0.75rem', background: 'rgba(168,85,247,0.2)', color: 'var(--purple)', padding: '0.15rem 0.55rem', borderRadius: '10px', marginLeft: '0.4rem' }}>
+                          {task.submissions.length}
+                        </span>
+                      )}
+                    </h3>
+
+                    {/* Add Submission button — tasker only, task still active */}
+                    {isTasker && activeForSubmissions && activeMode === 'tasker' && (
+                      <button
+                        onClick={() => { setProofDescription(''); setProofFiles([]); setSubmitModalOpen(true); }}
+                        className="btn btn-primary btn-sm"
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                        id="add-submission-btn"
+                      >
+                        <PlusCircle size={16} /> Add Submission
+                      </button>
+                    )}
+                    {isTasker && activeForSubmissions && activeMode !== 'tasker' && (
+                      <button
+                        onClick={() => setActiveMode('tasker')}
+                        className="btn btn-secondary btn-sm"
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                      >
+                        <Repeat size={14} /> Switch to Tasker Mode
+                      </button>
+                    )}
                   </div>
-                )}
 
-                {task.submission.proofFiles && task.submission.proofFiles.length > 0 && (
-                  <div>
-                    <strong style={{ fontSize: '0.9rem', color: 'var(--text-sub)', display: 'block', marginBottom: '0.5rem' }}>
-                      Uploaded Proof Files:
-                    </strong>
-                    <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                      {task.submission.proofFiles.map((file, idx) => (
-                        <div key={idx} style={{ position: 'relative' }}>
-                          {file.startsWith('http') || file.startsWith('/uploads') ? (
-                            <a
-                              href={file.startsWith('http') ? file : `http://localhost:5000${file}`}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              <img
-                                src={file.startsWith('http') ? file : `http://localhost:5000${file}`}
-                                alt="Proof Attachment"
-                                style={{ width: '120px', height: '120px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--border-color)' }}
-                              />
-                            </a>
-                          ) : (
-                            <span style={{ fontSize: '0.8rem', color: 'var(--cyan)' }}>{file}</span>
+                  {/* ── New submissions[] list ── */}
+                  {hasNewSubmissions && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                      {task.submissions.map((sub, idx) => (
+                        <div
+                          key={sub._id}
+                          id={`submission-${sub._id}`}
+                          style={{
+                            background: sub.isFinal
+                              ? 'linear-gradient(135deg, rgba(16,185,129,0.08), rgba(6,182,212,0.06))'
+                              : 'rgba(255,255,255,0.03)',
+                            border: sub.isFinal
+                              ? '1px solid rgba(16,185,129,0.4)'
+                              : '1px solid var(--border-color)',
+                            borderRadius: 'var(--radius-sm)',
+                            padding: '1rem'
+                          }}
+                        >
+                          {/* Submission header row */}
+                          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+                              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)' }}>
+                                #{idx + 1}
+                              </span>
+                              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                {new Date(sub.submittedAt).toLocaleString()}
+                              </span>
+                              {sub.isFinal && (
+                                <span style={{
+                                  fontSize: '0.72rem',
+                                  fontWeight: 700,
+                                  padding: '0.15rem 0.55rem',
+                                  borderRadius: '10px',
+                                  background: 'rgba(16,185,129,0.2)',
+                                  color: 'var(--emerald)',
+                                  border: '1px solid rgba(16,185,129,0.35)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.25rem'
+                                }}>
+                                  <Star size={11} fill="currentColor" /> FINAL
+                                </span>
+                              )}
+                              {/* Per-submission AI badge */}
+                              {sub.aiProofVerification && (
+                                <span style={{
+                                  fontSize: '0.72rem',
+                                  fontWeight: 700,
+                                  padding: '0.15rem 0.55rem',
+                                  borderRadius: '10px',
+                                  background: sub.aiProofVerification.recommendation === 'RECOMMEND_APPROVE'
+                                    ? 'rgba(16,185,129,0.15)'
+                                    : sub.aiProofVerification.recommendation === 'FLAG_CONCERNS'
+                                    ? 'rgba(244,63,94,0.15)'
+                                    : 'rgba(245,158,11,0.15)',
+                                  color: sub.aiProofVerification.recommendation === 'RECOMMEND_APPROVE'
+                                    ? 'var(--emerald)'
+                                    : sub.aiProofVerification.recommendation === 'FLAG_CONCERNS'
+                                    ? 'var(--rose)'
+                                    : '#f59e0b',
+                                  border: sub.aiProofVerification.recommendation === 'RECOMMEND_APPROVE'
+                                    ? '1px solid rgba(16,185,129,0.3)'
+                                    : sub.aiProofVerification.recommendation === 'FLAG_CONCERNS'
+                                    ? '1px solid rgba(244,63,94,0.3)'
+                                    : '1px solid rgba(245,158,11,0.3)'
+                                }}>
+                                  AI {sub.aiProofVerification.matchScore}% · {sub.aiProofVerification.confidence}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Tasker action buttons (active tasks only) */}
+                            {isTasker && activeForSubmissions && activeMode === 'tasker' && (
+                              <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+                                {!sub.isFinal && (
+                                  <button
+                                    id={`mark-final-${sub._id}`}
+                                    onClick={() => handleMarkFinal(sub._id)}
+                                    disabled={markingFinalSubId === sub._id}
+                                    className="btn btn-success btn-sm"
+                                    style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.78rem', padding: '0.3rem 0.65rem' }}
+                                    title="Mark this submission as final"
+                                  >
+                                    <Star size={13} />
+                                    {markingFinalSubId === sub._id ? '...' : 'Mark Final'}
+                                  </button>
+                                )}
+                                {sub.isFinal && (
+                                  <span style={{ fontSize: '0.75rem', color: 'var(--emerald)', display: 'flex', alignItems: 'center', gap: '0.25rem', padding: '0.3rem 0.5rem' }}>
+                                    <StarOff size={13} /> Final selected
+                                  </span>
+                                )}
+                                <button
+                                  id={`delete-submission-${sub._id}`}
+                                  onClick={() => handleDeleteSubmission(sub._id)}
+                                  disabled={deletingSubId === sub._id}
+                                  className="btn btn-danger btn-sm"
+                                  style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.78rem', padding: '0.3rem 0.65rem' }}
+                                  title="Delete this submission"
+                                >
+                                  <Trash2 size={13} />
+                                  {deletingSubId === sub._id ? '...' : 'Delete'}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Description */}
+                          {sub.description && (
+                            <div style={{ marginBottom: '0.75rem' }}>
+                              <strong style={{ fontSize: '0.85rem', color: 'var(--text-sub)' }}>Description:</strong>
+                              <p style={{ background: 'rgba(0,0,0,0.25)', padding: '0.65rem 0.85rem', borderRadius: '6px', marginTop: '0.25rem', color: 'var(--text-main)', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                                {sub.description}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Proof files */}
+                          {sub.proofFiles && sub.proofFiles.length > 0 && (
+                            <div>
+                              <strong style={{ fontSize: '0.85rem', color: 'var(--text-sub)', display: 'block', marginBottom: '0.5rem' }}>
+                                Proof Files ({sub.proofFiles.length}):
+                              </strong>
+                              <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap' }}>
+                                {sub.proofFiles.map((file, fIdx) => (
+                                  <div key={fIdx}>
+                                    {file.startsWith('http') || file.startsWith('/uploads') ? (
+                                      <a
+                                        href={file.startsWith('http') ? file : `http://localhost:5000${file}`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                      >
+                                        <img
+                                          src={file.startsWith('http') ? file : `http://localhost:5000${file}`}
+                                          alt={`Proof file ${fIdx + 1}`}
+                                          style={{ width: '110px', height: '110px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--border-color)' }}
+                                          onError={(e) => { e.target.style.display = 'none'; }}
+                                        />
+                                      </a>
+                                    ) : (
+                                      <span style={{ fontSize: '0.8rem', color: 'var(--cyan)' }}>{file}</span>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Detailed AI findings for this submission */}
+                          {sub.aiProofVerification && sub.aiProofVerification.findings && sub.aiProofVerification.findings.length > 0 && (
+                            <div style={{ marginTop: '0.65rem', fontSize: '0.78rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                              💡 {sub.aiProofVerification.summary}
+                            </div>
                           )}
                         </div>
                       ))}
                     </div>
-                  </div>
-                )}
-              </div>
-            )}
+                  )}
+
+                  {/* ── Backward-compat: legacy task.submission (read-only) ── */}
+                  {hasLegacySubmission && (
+                    <div style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: 'var(--radius-sm)', padding: '1rem' }}>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+                        Legacy submission — {new Date(task.submission.submittedAt).toLocaleString()}
+                      </div>
+                      {task.submission.description && (
+                        <div style={{ marginBottom: '0.75rem' }}>
+                          <strong style={{ fontSize: '0.85rem', color: 'var(--text-sub)' }}>Description:</strong>
+                          <p style={{ background: 'rgba(0,0,0,0.25)', padding: '0.65rem 0.85rem', borderRadius: '6px', marginTop: '0.25rem', color: 'var(--text-main)', fontSize: '0.9rem' }}>
+                            {task.submission.description}
+                          </p>
+                        </div>
+                      )}
+                      {task.submission.proofFiles && task.submission.proofFiles.length > 0 && (
+                        <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap' }}>
+                          {task.submission.proofFiles.map((file, idx) => (
+                            <div key={idx}>
+                              {file.startsWith('http') || file.startsWith('/uploads') ? (
+                                <a href={file.startsWith('http') ? file : `http://localhost:5000${file}`} target="_blank" rel="noreferrer">
+                                  <img
+                                    src={file.startsWith('http') ? file : `http://localhost:5000${file}`}
+                                    alt="Legacy proof"
+                                    style={{ width: '110px', height: '110px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--border-color)' }}
+                                  />
+                                </a>
+                              ) : (
+                                <span style={{ fontSize: '0.8rem', color: 'var(--cyan)' }}>{file}</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Empty state for tasker on active task */}
+                  {!hasNewSubmissions && !hasLegacySubmission && isTasker && activeForSubmissions && (
+                    <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-muted)' }}>
+                      <FileText size={28} style={{ marginBottom: '0.5rem', opacity: 0.4 }} />
+                      <p style={{ fontSize: '0.9rem' }}>No submissions yet. Add your first submission using the button above.</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+
 
             {/* AI Proof Verification Insights Panel */}
             {task.aiProofVerification && (
@@ -619,8 +880,8 @@ const TaskDetailPage = () => {
                   </>
                 )}
 
-                {/* Assigned Tasker Actions on ACCEPTED / IN_PROGRESS */}
-                {isTasker && (task.status === 'ACCEPTED' || task.status === 'IN_PROGRESS') && (
+                {/* Assigned Tasker Actions on ACCEPTED / IN_PROGRESS / SUBMITTED */}
+                {isTasker && (task.status === 'ACCEPTED' || task.status === 'IN_PROGRESS' || task.status === 'SUBMITTED') && (
                   <>
                     {activeMode === 'requester' ? (
                       <button
@@ -637,8 +898,13 @@ const TaskDetailPage = () => {
                             <Play size={20} /> Start Task
                           </button>
                         )}
-                        <button onClick={() => setSubmitModalOpen(true)} className="btn btn-primary btn-lg" disabled={submittingAction}>
-                          <Upload size={20} /> Submit Completion Proof
+                        <button
+                          onClick={() => { setProofDescription(''); setProofFiles([]); setSubmitModalOpen(true); }}
+                          className="btn btn-primary btn-lg"
+                          disabled={submittingAction}
+                          id="action-bar-add-submission-btn"
+                        >
+                          <PlusCircle size={20} /> Add Submission
                         </button>
                       </>
                     )}
@@ -822,11 +1088,11 @@ const TaskDetailPage = () => {
           </div>
         </div>
 
-        {/* Modal 1: Submit Proof Modal (File Upload + Text Description Only) */}
-        <Modal isOpen={submitModalOpen} onClose={() => setSubmitModalOpen(false)} title="Submit Task Completion Proof">
+        {/* Modal 1: Add Submission Modal (reused for both first and subsequent submissions) */}
+        <Modal isOpen={submitModalOpen} onClose={() => setSubmitModalOpen(false)} title="Add Proof Submission">
           <form onSubmit={handleSubmitProof}>
             <div className="form-group">
-              <label className="form-label">Completion Description / Summary</label>
+              <label className="form-label">Description / Summary</label>
               <textarea
                 className="form-textarea"
                 placeholder="Describe your verification findings, shop prices, or location conditions..."
@@ -855,8 +1121,9 @@ const TaskDetailPage = () => {
                 Cancel
               </button>
               <button type="submit" className="btn btn-primary" disabled={submittingAction}>
-                {submittingAction ? 'Analyzing & Uploading...' : 'Submit Proof'}
+                {submittingAction ? 'Analyzing & Uploading...' : 'Add Submission'}
               </button>
+
             </div>
           </form>
         </Modal>
