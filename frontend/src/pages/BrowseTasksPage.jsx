@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import TaskCard from '../components/TaskCard';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { Search, Filter, MapPin, RefreshCw, AlertCircle, Repeat } from 'lucide-react';
+import { Search, MapPin, RefreshCw, AlertCircle, Repeat, SlidersHorizontal } from 'lucide-react';
 
 const BrowseTasksPage = () => {
   const { user, activeMode, setActiveMode } = useAuth();
@@ -11,7 +11,6 @@ const BrowseTasksPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Search & Filter state
   const [q, setQ] = useState('');
   const [category, setCategory] = useState('All');
   const [stateFilter, setStateFilter] = useState('');
@@ -31,23 +30,13 @@ const BrowseTasksPage = () => {
       if (cityFilter) params.city = cityFilter;
       if (statusFilter) params.status = statusFilter;
 
-      if (rewardRange === '0-250') {
-        params.minReward = 0;
-        params.maxReward = 250;
-      } else if (rewardRange === '250-500') {
-        params.minReward = 250;
-        params.maxReward = 500;
-      } else if (rewardRange === '500-1000') {
-        params.minReward = 500;
-        params.maxReward = 1000;
-      } else if (rewardRange === '1000+') {
-        params.minReward = 1000;
-      }
+      if (rewardRange === '0-250')   { params.minReward = 0;    params.maxReward = 250;  }
+      else if (rewardRange === '250-500')  { params.minReward = 250;  params.maxReward = 500;  }
+      else if (rewardRange === '500-1000') { params.minReward = 500;  params.maxReward = 1000; }
+      else if (rewardRange === '1000+')    { params.minReward = 1000; }
 
       const res = await api.get('/tasks', { params });
-      if (res.data.success) {
-        setTasks(res.data.tasks);
-      }
+      if (res.data.success) setTasks(res.data.tasks);
     } catch (err) {
       setError(err.message || 'Failed to fetch tasks');
     } finally {
@@ -55,114 +44,151 @@ const BrowseTasksPage = () => {
     }
   };
 
-  useEffect(() => {
-    fetchTasks();
-  }, [category, statusFilter, rewardRange]);
+  useEffect(() => { fetchTasks(); }, [category, statusFilter, rewardRange]);
 
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    fetchTasks();
-  };
+  const handleSearchSubmit = (e) => { e.preventDefault(); fetchTasks(); };
 
   const handleResetFilters = () => {
-    setQ('');
-    setCategory('All');
-    setStateFilter('');
-    setCityFilter('');
-    setRewardRange('Any');
-    setStatusFilter('OPEN');
+    setQ(''); setCategory('All'); setStateFilter('');
+    setCityFilter(''); setRewardRange('Any'); setStatusFilter('OPEN');
     fetchTasks();
   };
 
   return (
     <div className="page-wrapper">
       <div className="container">
-        {/* Header Title */}
-        <div style={{ marginBottom: '1.5rem' }}>
-          <h1 style={{ fontSize: '1.8rem', marginBottom: '0.5rem' }}>
-            Browse Verification & Assistance Tasks
+
+        {/* ── Header ─────────────────────────────── */}
+        <div className="page-header">
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: 'var(--cyan)',
+              marginBottom: '0.6rem',
+            }}
+          >
+            <Search size={13} /> Browse
+          </div>
+          <h1>
+            Verification &amp; Assistance Tasks
           </h1>
-          <p style={{ color: 'var(--text-sub)', fontSize: '0.925rem' }}>
-            Filter open requests by category, reward range, state, and city locality.
+          <p style={{ color: 'var(--text-sub)', fontSize: '0.925rem', marginTop: '0.25rem' }}>
+            Filter open requests by category, reward range, state, and city.
           </p>
         </div>
 
-        {/* Mode Notification Banner if viewing in Requester Mode (Non-Admin Users Only) */}
+        {/* ── Mode Banner ─────────────────────────── */}
         {user && user.role !== 'admin' && activeMode === 'requester' && (
           <div
             style={{
-              background: 'rgba(99, 102, 241, 0.12)',
-              border: '1px solid rgba(99, 102, 241, 0.35)',
-              borderRadius: 'var(--radius-sm)',
-              padding: '0.85rem 1.25rem',
+              background: 'rgba(99, 102, 241, 0.08)',
+              border: '1px solid rgba(99, 102, 241, 0.25)',
+              borderLeft: '3px solid var(--primary)',
+              borderRadius: 'var(--radius-md)',
+              padding: '0.9rem 1.25rem',
               marginBottom: '1.5rem',
               display: 'flex',
               flexWrap: 'wrap',
               alignItems: 'center',
               justifyContent: 'space-between',
-              gap: '0.75rem'
+              gap: '0.75rem',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-              <span style={{ fontSize: '1.1rem' }}>💡</span>
+              <span style={{ fontSize: '1rem' }}>💡</span>
               <div>
                 <span style={{ fontWeight: 700, color: '#fff', fontSize: '0.875rem' }}>
                   You are browsing in Requester Mode.
                 </span>
                 <p style={{ margin: '0.1rem 0 0', color: 'var(--text-sub)', fontSize: '0.8rem' }}>
-                  Accepting tasks, starting work, and submitting proof requires switching to Tasker Mode.
+                  Accepting tasks requires switching to Tasker Mode.
                 </p>
               </div>
             </div>
-
             <button
               type="button"
               onClick={() => setActiveMode('tasker')}
               className="btn btn-cyan btn-sm"
-              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
             >
-              <Repeat size={14} /> Switch to Tasker Mode
+              <Repeat size={13} /> Switch to Tasker Mode
             </button>
           </div>
         )}
 
+        {/* ── Filter Panel ────────────────────────── */}
+        <div
+          className="glass-card"
+          style={{ marginBottom: '2rem', borderTop: '2px solid rgba(99,102,241,0.3)' }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              marginBottom: '1.1rem',
+              color: 'var(--text-sub)',
+              fontSize: '0.825rem',
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+            }}
+          >
+            <SlidersHorizontal size={14} color="var(--primary-light)" /> Filter Tasks
+          </div>
 
-        {/* Search Bar & Filters Form */}
-        <div className="glass-card" style={{ marginBottom: '2rem' }}>
           <form onSubmit={handleSearchSubmit}>
-            {/* Main Search Input */}
-            <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
-              <div style={{ flex: 1, minWidth: '260px', position: 'relative' }}>
-                <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+            {/* Search Bar */}
+            <div style={{ display: 'flex', gap: '0.65rem', marginBottom: '1.1rem', flexWrap: 'wrap' }}>
+              <div style={{ flex: 1, minWidth: '240px', position: 'relative' }}>
+                <Search
+                  size={16}
+                  style={{
+                    position: 'absolute', left: '12px', top: '50%',
+                    transform: 'translateY(-50%)', color: 'var(--text-muted)',
+                    pointerEvents: 'none',
+                  }}
+                />
                 <input
                   type="text"
                   className="form-control"
                   style={{ paddingLeft: '2.5rem' }}
-                  placeholder="Search by title, description, city, or locality (e.g. Vijayawada, Benz Circle)..."
+                  placeholder="Search by title, city, or locality…"
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
                 />
               </div>
-              <button type="submit" className="btn btn-cyan">
-                Search
+              <button type="submit" className="btn btn-primary" style={{ flexShrink: 0 }}>
+                <Search size={15} /> Search
               </button>
-              <button type="button" onClick={handleResetFilters} className="btn btn-secondary btn-sm" title="Reset Filters">
-                <RefreshCw size={16} /> Reset
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="btn btn-secondary btn-sm"
+                title="Reset Filters"
+                style={{ flexShrink: 0 }}
+              >
+                <RefreshCw size={14} /> Reset
               </button>
             </div>
 
-            {/* Filter Dropdowns Grid */}
+            {/* Filter Dropdowns */}
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                gap: '1rem',
-                borderTop: '1px solid var(--border-color)',
-                paddingTop: '1rem'
+                gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+                gap: '0.85rem',
+                paddingTop: '1rem',
+                borderTop: '1px solid var(--border-subtle)',
               }}
             >
               <div>
-                <label className="form-label" style={{ fontSize: '0.8rem' }}>Category</label>
+                <label className="form-label">Category</label>
                 <select className="form-select" value={category} onChange={(e) => setCategory(e.target.value)}>
                   <option value="All">All Categories</option>
                   <option value="verification">Verification</option>
@@ -176,11 +202,11 @@ const BrowseTasksPage = () => {
               </div>
 
               <div>
-                <label className="form-label" style={{ fontSize: '0.8rem' }}>State</label>
+                <label className="form-label">State</label>
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Filter state (e.g. Andhra Pradesh)"
+                  placeholder="e.g. Andhra Pradesh"
                   value={stateFilter}
                   onChange={(e) => setStateFilter(e.target.value)}
                   onBlur={fetchTasks}
@@ -188,11 +214,11 @@ const BrowseTasksPage = () => {
               </div>
 
               <div>
-                <label className="form-label" style={{ fontSize: '0.8rem' }}>City</label>
+                <label className="form-label">City</label>
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Filter city (e.g. Vijayawada)"
+                  placeholder="e.g. Vijayawada"
                   value={cityFilter}
                   onChange={(e) => setCityFilter(e.target.value)}
                   onBlur={fetchTasks}
@@ -201,7 +227,7 @@ const BrowseTasksPage = () => {
 
               {user?.role !== 'admin' && (
                 <div>
-                  <label className="form-label" style={{ fontSize: '0.8rem' }}>Reward Range</label>
+                  <label className="form-label">Reward Range</label>
                   <select className="form-select" value={rewardRange} onChange={(e) => setRewardRange(e.target.value)}>
                     <option value="Any">Any Reward</option>
                     <option value="0-250">₹0 – ₹250</option>
@@ -212,9 +238,8 @@ const BrowseTasksPage = () => {
                 </div>
               )}
 
-
               <div>
-                <label className="form-label" style={{ fontSize: '0.8rem' }}>Status</label>
+                <label className="form-label">Status</label>
                 <select className="form-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
                   <option value="OPEN">OPEN Only</option>
                   <option value="ACCEPTED">ACCEPTED</option>
@@ -230,43 +255,60 @@ const BrowseTasksPage = () => {
           </form>
         </div>
 
-        {/* Results Counter & Loading State */}
+        {/* ── Error ───────────────────────────────── */}
         {error && (
-          <div
-            style={{
-              background: 'rgba(244, 63, 94, 0.12)',
-              border: '1px solid rgba(244, 63, 94, 0.3)',
-              color: 'var(--rose)',
-              padding: '0.75rem 1rem',
-              borderRadius: 'var(--radius-sm)',
-              marginBottom: '1.5rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem'
-            }}
-          >
-            <AlertCircle size={18} />
+          <div className="alert-error" style={{ marginBottom: '1.25rem' }}>
+            <AlertCircle size={16} />
             <span>{error}</span>
           </div>
         )}
 
+        {/* ── Results ─────────────────────────────── */}
         {loading ? (
           <LoadingSpinner text="Searching tasks..." />
         ) : tasks.length === 0 ? (
-          <div className="glass-card" style={{ textAlign: 'center', padding: '3.5rem 1.5rem' }}>
-            <MapPin size={40} color="var(--text-muted)" style={{ marginBottom: '1rem' }} />
-            <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>No Tasks Found</h3>
-            <p style={{ color: 'var(--text-sub)', fontSize: '0.9rem', maxWidth: '400px', margin: '0 auto 1.5rem' }}>
-              No tasks match your current search query or filter parameters. Try clearing your filters.
+          <div className="glass-card empty-state">
+            <div
+              className="empty-state-icon"
+              style={{
+                background: 'rgba(100,116,139,0.1)',
+                border: '1px solid rgba(100,116,139,0.2)',
+                color: 'var(--text-muted)',
+              }}
+            >
+              <MapPin size={28} />
+            </div>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '0.5rem' }}>No Tasks Found</h3>
+            <p style={{ color: 'var(--text-sub)', fontSize: '0.9rem', maxWidth: '360px', marginBottom: '1.25rem' }}>
+              No tasks match your current filters. Try clearing them to see all available tasks.
             </p>
             <button onClick={handleResetFilters} className="btn btn-secondary">
-              Reset Filters
+              <RefreshCw size={15} /> Reset Filters
             </button>
           </div>
         ) : (
           <div>
-            <div style={{ marginBottom: '1rem', color: 'var(--text-sub)', fontSize: '0.875rem' }}>
-              Showing <strong>{tasks.length}</strong> available tasks
+            <div
+              style={{
+                marginBottom: '1.1rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+              }}
+            >
+              <span
+                style={{
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  padding: '0.28rem 0.75rem',
+                  borderRadius: 'var(--radius-full)',
+                  background: 'rgba(34,211,238,0.1)',
+                  color: 'var(--cyan)',
+                  border: '1px solid rgba(34,211,238,0.2)',
+                }}
+              >
+                {tasks.length} tasks found
+              </span>
             </div>
             <div className="grid-3">
               {tasks.map((task) => (

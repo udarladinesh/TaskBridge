@@ -141,7 +141,7 @@ const WalletPage = () => {
           <div>
             <h1 style={{ fontSize: '1.8rem', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
               <Wallet size={28} color="var(--cyan)" />
-              VeriTask Wallet & Escrow
+              TaskBridge Wallet & Escrow
             </h1>
             <p style={{ color: 'var(--text-sub)', fontSize: '0.925rem', margin: 0 }}>
               Secure escrow holding for task verification rewards, deposits, and earnings.
@@ -526,7 +526,7 @@ const WalletPage = () => {
                 <Building size={22} color="var(--cyan)" /> Withdraw Funds
               </h2>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-sub)', marginBottom: '1.5rem' }}>
-                Transfer earnings from your VeriTask wallet to your bank account or UPI ID.
+                Transfer earnings from your TaskBridge wallet to your bank account or UPI ID.
               </p>
 
               <form onSubmit={handleWithdraw}>

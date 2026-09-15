@@ -301,7 +301,7 @@ const CreateTaskPage = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Sparkles size={18} color={aiAnalysis.riskLevel === 'SAFE' ? 'var(--emerald)' : 'var(--cyan)'} />
                 <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#fff' }}>
-                  VeriTask AI Safety Scanner
+                  TaskBridge AI Safety Scanner
                 </span>
                 {scanningAi && (
                   <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Scanning...</span>
