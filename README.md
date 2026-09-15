@@ -1,4 +1,4 @@
-# Real-World Assistance & Verification Network (VeriTask) — Phase 1 MVP
+# Real-World Assistance & Verification Network (TaskBridge) — Phase 1 MVP
 
 A full-stack MERN web application connecting requesters who need something done or verified in a physical real-world location with trusted local taskers willing to complete those tasks for a reward.
 
